@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:password_generator/providers/config_provider.dart';
+import 'package:password_generator/providers/password_provider.dart';
 void main() {
-  runApp(const MyApp());
+  runApp(ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -15,31 +17,71 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(),
+      home: Home(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+class Home extends ConsumerWidget {
+  Home({ Key? key }) : super(key: key);
+
+  final passwordProvider = StateNotifierProvider<Password, String>((ref) {
+    return Password();
+  });
+
+  final configProvider = StateNotifierProvider<Config,dynamic>((ref) {
+    return Config();
+  });
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
 
-class _MyHomePageState extends State<MyHomePage> {
+    final password = ref.watch(passwordProvider);
+    final configs = ref.watch(configProvider);
 
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
-      key: _scaffoldKey,
       appBar: AppBar(),
       body: Center(
-        child: Text("oie"),
+        child: Column(
+          children: [
+            Text(
+              password,
+              style: TextStyle(
+                fontSize: 30.0,
+              ),
+            ),
+            TextButton(
+              child: Text("generate password"),
+              onPressed: () {
+                ref.read(passwordProvider.notifier).updatePassword(configs);
+              },
+            ),
+          ],
+        ),
       ),
       drawer: Drawer(
+        child: Center(
+          child:Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: configs.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(configs[index]["description"]),
+                      trailing: Checkbox(
+                        value: configs[index]["active"],
+                        onChanged: (value) {
+                          ref.read(configProvider.notifier).toggleConfig(index);
+                        },
+                      ),
+                    );
+                  }
+                ),
+              )
+            ],
+          ),
+        ),
       ),
     );
   }
